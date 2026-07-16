@@ -1,2 +1,0 @@
-# diegobot
-index
