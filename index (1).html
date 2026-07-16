@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Armador de Horarios - UPIIG</title>
+  <!-- Tailwind CSS para diseño moderno -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style>
+    .celda-hora { min-height: 70px; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col">
+
+  <!-- PANTALLA 1: SELECCIÓN -->
+  <div id="pantalla-seleccion" class="flex flex-col items-center justify-center flex-1 p-6">
+    <div class="bg-slate-900 p-8 rounded-xl shadow-2xl w-full max-w-md border border-slate-800">
+      <h1 class="text-2xl font-bold text-center mb-6 text-cyan-400">Horarios UPIIG</h1>
+      <label class="block mb-2 text-sm font-medium text-slate-300">Selecciona tu Carrera:</label>
+      <select id="selector-carrera" class="w-full p-3 bg-slate-800 rounded-lg border border-slate-700 text-white focus:outline-none focus:border-cyan-500 mb-6">
+        <option value="">-- Seleccionar --</option>
+      </select>
+      <button id="btn-comenzar" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 rounded-lg transition-colors cursor-pointer">
+        Comenzar a Armar
+      </button>
+    </div>
+  </div>
+
+  <!-- PANTALLA 2: ESPACIO DE TRABAJO (Oculto al inicio) -->
+  <div id="pantalla-workspace" class="hidden flex flex-1 overflow-hidden">
+    <!-- Panel Lateral: Banco de Materias -->
+    <div class="w-80 bg-slate-900 border-r border-slate-800 p-4 flex flex-col">
+      <h2 id="titulo-carrera" class="text-lg font-bold text-cyan-400 border-b border-slate-800 pb-2 mb-4">Materias</h2>
+      <div id="banco-materias" class="flex-1 overflow-y-auto space-y-2">
+        <!-- Las materias se cargarán aquí dinámicamente -->
+      </div>
+      <button onclick="window.location.reload()" class="mt-4 w-full bg-red-900/40 border border-red-700 hover:bg-red-800 text-white py-2 rounded text-sm transition-colors cursor-pointer">
+        Reiniciar Todo
+      </button>
+    </div>
+
+    <!-- Panel Central: Cuadrícula del Horario -->
+    <div class="flex-1 p-6 overflow-auto">
+      <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
+        <!-- Encabezado de Días -->
+        <div class="grid grid-cols-6 bg-slate-800 text-center font-semibold text-xs text-slate-300 py-3 border-b border-slate-700">
+          <div>Hora</div>
+          <div>Lunes</div>
+          <div>Martes</div>
+          <div>Miércoles</div>
+          <div>Jueves</div>
+          <div>Viernes</div>
+        </div>
+        <!-- Filas de Horas -->
+        <div id="filas-horario" class="divide-y divide-slate-800">
+          <!-- Las horas y celdas se generarán aquí con JavaScript -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Importamos nuestros datos y lógica -->
+  <script src="materias.js"></script>
+  <script>
+    const horas = ["07:00 - 08:30", "08:30 - 10:00", "10:00 - 11:30", "11:30 - 13:00", "13:00 - 14:30", "14:30 - 16:00"];
+    const dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
+
+    // Llenar el selector de carreras al cargar la página
+    const selector = document.getElementById('selector-carrera');
+    Object.keys(ofertaAcademica).forEach(carrera => {
+      const opt = document.createElement('option');
+      opt.value = carrera;
+      opt.textContent = carrera;
+      selector.appendChild(opt);
+    });
+
+    // Cambiar de pantalla y cargar materias
+    document.getElementById('btn-comenzar').addEventListener('click', () => {
+      const carreraSeleccionada = selector.value;
+      if (!carreraSeleccionada) return alert("Por favor selecciona una carrera");
+
+      document.getElementById('pantalla-seleccion').classList.add('hidden');
+      document.getElementById('pantalla-workspace').classList.remove('hidden');
+      document.getElementById('titulo-carrera').textContent = carreraSeleccionada;
+
+      cargarBancoMaterias(carreraSeleccionada);
+      generarCuadricula();
+    });
+
+    // Renderizar las materias arrastrables
+    function cargarBancoMaterias(carrera) {
+      const banco = document.getElementById('banco-materias');
+      ofertaAcademica[carrera].forEach(materia => {
+        const div = document.createElement('div');
+        div.className = "p-3 bg-slate-800 rounded-lg border border-slate-700 shadow cursor-grab hover:border-cyan-500/50";
+        div.draggable = true;
+        div.id = materia.id;
+        div.innerHTML = `<p class="text-sm font-medium text-slate-200">${materia.nombre}</p>
+                         <span class="text-[10px] text-slate-400 bg-slate-700 px-1.5 py-0.5 rounded mt-1 inline-block">${materia.semestre}</span>`;
+        
+        // Eventos de arrastre
+        div.addEventListener('dragstart', (e) => e.dataTransfer.setData('text/plain', e.target.id));
+        banco.appendChild(div);
+      });
+    }
+
+    // Generar las celdas del horario
+    function generarCuadricula() {
+      const contenedorFilas = document.getElementById('filas-horario');
+      horas.forEach(hora => {
+        const fila = document.createElement('div');
+        fila.className = "grid grid-cols-6 celda-hora";
+        
+        // Celda de la hora (lateral)
+        fila.innerHTML = `<div class="flex items-center justify-center bg-slate-900/50 text-xs font-medium text-slate-400 p-2 border-r border-slate-800 text-center">${hora}</div>`;
+        
+        // Celdas para cada día
+        dias.forEach(dia => {
+          const celda = document.createElement('div');
+          celda.className = "p-2 border-r border-slate-800 last:border-r-0 bg-slate-900/20 flex flex-col justify-center transition-colors";
+          
+          // Eventos para recibir elementos arrastrados
+          celda.addEventListener('dragover', (e) => e.preventDefault());
+          celda.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const idMateria = e.dataTransfer.getData('text/plain');
+            const elementoMateria = document.getElementById(idMateria);
+            
+            // Validar que la celda esté vacía antes de meter la tarjeta
+            if (celda.children.length === 0 && elementoMateria) {
+              // Estilizar la tarjeta para que se adapte a la celda
+              elementoMateria.className = "bg-cyan-600/20 border border-cyan-500 text-cyan-300 p-2 rounded text-center text-xs font-semibold shadow-sm w-full cursor-default";
+              elementoMateria.draggable = false; // Ya no se vuelve a mover desde ahí en esta versión básica
+              celda.appendChild(elementoMateria);
+            }
+          });
+          
+          fila.appendChild(celda);
+        });
+        contenedorFilas.appendChild(fila);
+      });
+    }
+  </script>
+</body>
+</html>
